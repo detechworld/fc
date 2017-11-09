@@ -18,6 +18,7 @@ namespace fc {
     class thread_d {
 
         public:
+           using context_pair = std::pair<thread_d*, fc::context*>;
            fc::context* prev_ctx = nullptr;
 
            thread_d(fc::thread& s)
@@ -402,7 +403,7 @@ namespace fc {
 #if BOOST_VERSION >= 106100
                 prev_ctx = prev;
                 std::cerr<<"start jumping to existing context...\n";
-                bc::detail::jump_fcontext( next->my_context, this );
+                bc::jump_fcontext( next->my_context, this );
                 std::cerr<<"back from jumping to existing context\n";
 #elif BOOST_VERSION >= 105600
                 bc::jump_fcontext( &prev->my_context, next->my_context, 0 );
@@ -448,11 +449,11 @@ namespace fc {
                 // fc_dlog( logger::get("fc_context"), "from ${from} to ${to}", ( "from", int64_t(prev) )( "to", int64_t(next) ) );
 #if BOOST_VERSION >= 106100
                 //(*next->my_context)( (intptr_t)this );
-                //bc::detail::transfer_t tran; tran.data = this;
+                //bc::transfer_t tran; tran.data = this;
                 std::cerr << "start prev->my_context = " << prev->my_context <<"... \n";
                 std::cerr << "jumping to next context... \n";
                 prev_ctx = prev;
-                auto result = bc::detail::jump_fcontext( next->my_context, this );
+                auto result = bc::jump_fcontext( next->my_context, this );
                 std::cerr << "end prev->my_context = " << prev->my_context <<"... \n";
                 std::cerr << result.fctx <<" <--- result \n";
 #elif BOOST_VERSION >= 105600
@@ -483,12 +484,19 @@ namespace fc {
               return true;
            }
 
-           static void start_process_tasks( fc::context::transfer_t my ) 
-           {
 #if BOOST_VERSION >= 106100
+           static void start_process_tasks( bc::transfer_t my )
+           {
+              auto p = static_cast<context_pair*>(my.data); 
+              auto self = static_cast<thread_d*>(p->first);
+              p->second->my_context = my.fctx;
+#else
+           static void start_process_tasks( intptr_t my ) 
+           {
+              thread_d* self = (thread_d*)my;
+#endif
               std::cerr<<"my data: "<<my.data<<"\n";
               std::cerr<<"my from: "<<my.fctx<<"\n";
-              thread_d* self = (thread_d*)my.data;
               if( self->prev_ctx )
               {
                  std::cerr << "setting prev_ctx to " << int64_t(my.fctx) << "\n";
@@ -496,9 +504,6 @@ namespace fc {
               }
               std::cerr<<"start process tasks\n" << int64_t(self)<<"\n";
               assert( self != 0 );
-#else
-              thread_d* self = (thread_d*)my;
-#endif
               try 
               {
                 self->process_tasks();

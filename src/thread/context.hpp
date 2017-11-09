@@ -7,7 +7,20 @@
 
 #include <boost/version.hpp>
 
-#if BOOST_VERSION >= 105400
+#if BOOST_VERSION >= 106800
+#include <boost/context/continuation_fcontext.hpp>
+#else
+#include <boost/context/all.hpp>
+#endif
+
+#define BOOST_COROUTINES_NO_DEPRECATION_WARNING
+
+#if BOOST_VERSION >= 106100
+  #include <boost/coroutine/stack_allocator.hpp>
+  namespace bc  = boost::context::detail;
+  namespace bco = boost::coroutines;
+  typedef bco::stack_allocator stack_allocator;
+#elif BOOST_VERSION >= 105400
 # include <boost/coroutine/stack_context.hpp>
   namespace bc  = boost::context;
   namespace bco = boost::coroutines;
@@ -31,12 +44,6 @@
   namespace bco = boost::coroutine;
 #endif
 
-#if BOOST_VERSION >= 106800
-#include <boost/context/continuation_fcontext.hpp>
-#else
-#include <boost/context/all.hpp>
-#endif
-
 namespace fc {
   class thread;
   class promise_base;
@@ -55,7 +62,7 @@ namespace fc {
 #endif
 
 #if BOOST_VERSION >= 106100 
-    typedef bc::detail::transfer_t transfer_t;
+    typedef bc::transfer_t transfer_t;
 #else
     typedef intptr_t transfer_t;
 #endif
@@ -80,7 +87,7 @@ namespace fc {
      //my_context = new bc::execution_context<intptr_t>( [=]( bc::execution_context<intptr_t> sink, intptr_t self  ){ std::cerr<<"in ex\n"; sf(self);  std::cerr<<"exit ex\n"; return sink; } );
      size_t stack_size = FC_CONTEXT_STACK_SIZE;
      alloc.allocate(stack_ctx, stack_size);
-     my_context = bc::detail::make_fcontext( stack_ctx.sp, stack_ctx.size, sf );
+     my_context = bc::make_fcontext( stack_ctx.sp, stack_ctx.size, sf );
 #elif BOOST_VERSION >= 105600
      size_t stack_size = FC_CONTEXT_STACK_SIZE;
      alloc.allocate(stack_ctx, stack_size);
@@ -241,7 +248,7 @@ namespace fc {
 
 #if BOOST_VERSION >= 106100 
     //bc::execution_context<intptr_t>*   my_context;
-    bc::detail::fcontext_t       my_context;
+    bc::fcontext_t       my_context;
 #elif BOOST_VERSION >= 105300 && BOOST_VERSION < 105600
     bc::fcontext_t*              my_context;
 #else
