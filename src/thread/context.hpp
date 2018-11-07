@@ -1,6 +1,5 @@
 #pragma once
 #include <fc/thread/thread.hpp>
-#include <boost/context/all.hpp>
 #include <fc/exception/exception.hpp>
 #include <vector>
 
@@ -30,6 +29,12 @@
 #else
   namespace bc  = boost::ctx;
   namespace bco = boost::coroutine;
+#endif
+
+#if BOOST_VERSION >= 106800
+#include <boost/context/continuation_fcontext.hpp>
+#else
+#include <boost/context/all.hpp>
 #endif
 
 namespace fc {
