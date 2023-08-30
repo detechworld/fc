@@ -208,7 +208,22 @@ static void to_bignum(const char* data32, fc::ssl_bignum& out) {
 //}
 
 namespace fc {
-SSL_TYPE(ec_key,       EC_KEY,       EC_KEY_free)
+    SSL_TYPE_DECL(ec_key,       EC_KEY)
+    ec_key::ec_key( EC_KEY* obj ) : ssl_wrapper(obj) {}
+    ec_key::ec_key( ec_key&& move ) : ssl_wrapper( move.obj ) { move.obj = nullptr; }
+    ec_key::~ec_key() {
+       if( obj != nullptr )
+          EC_KEY_free(obj);
+    }
+    ec_key& ec_key::operator=( ec_key&& move ) {
+       if( this != &move ) {
+          if( obj != nullptr )
+             EC_KEY_free(obj);
+          obj = move.obj;
+          move.obj = nullptr;
+       }
+       return *this;
+    }
 }
 
 BOOST_AUTO_TEST_CASE(openssl_blinding)

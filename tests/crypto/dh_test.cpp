@@ -8,7 +8,7 @@ BOOST_AUTO_TEST_SUITE(fc_crypto)
 BOOST_AUTO_TEST_CASE(dh_test)
 {
     fc::diffie_hellman alice;
-    BOOST_CHECK( alice.generate_params( 128, 5 ) );
+    BOOST_CHECK( alice.generate_params( 512, 5 ) );
     BOOST_CHECK( alice.generate_pub_key() );
 
     fc::diffie_hellman bob;
